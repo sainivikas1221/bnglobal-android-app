@@ -39,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private Button retryButton;
 
     private boolean webViewHasLoadedOnce = false;
+    private boolean loadFailed = false;
 
     private final BroadcastReceiver connectivityReceiver = new BroadcastReceiver() {
         @Override
@@ -90,6 +91,14 @@ public class MainActivity extends AppCompatActivity {
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
 
+        // Some WordPress security plugins / WAFs block requests whose User-Agent
+        // identifies as an embedded WebView (the "; wv" token). Strip it so the
+        // app looks like a normal mobile browser to the server.
+        String userAgent = settings.getUserAgentString();
+        if (userAgent != null && userAgent.contains("; wv")) {
+            settings.setUserAgentString(userAgent.replace("; wv", ""));
+        }
+
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -109,9 +118,15 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+                swipeRefresh.setRefreshing(false);
+                if (loadFailed) {
+                    // The WebView just finished rendering its own native error page
+                    // (e.g. after a connection reset). Keep showing our custom retry
+                    // screen instead of revealing that broken page.
+                    return;
+                }
                 webViewHasLoadedOnce = true;
                 showWebViewState();
-                swipeRefresh.setRefreshing(false);
             }
 
             @Override
@@ -119,6 +134,7 @@ public class MainActivity extends AppCompatActivity {
                 super.onReceivedError(view, request, error);
                 if (request.isForMainFrame()) {
                     webViewHasLoadedOnce = false;
+                    loadFailed = true;
                     swipeRefresh.setRefreshing(false);
                     showLoadErrorState();
                 }
@@ -129,6 +145,7 @@ public class MainActivity extends AppCompatActivity {
                 // Do not proceed on SSL errors; keep default (blocking) behavior.
                 handler.cancel();
                 webViewHasLoadedOnce = false;
+                loadFailed = true;
                 showLoadErrorState();
             }
         });
@@ -136,6 +153,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void attemptLoad() {
         if (isNetworkAvailable()) {
+            loadFailed = false;
             showLoadingSpinnerState();
             webView.loadUrl(TARGET_URL);
         } else {
