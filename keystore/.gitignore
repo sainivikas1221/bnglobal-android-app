@@ -1,0 +1,2 @@
+# Intentionally NOT ignoring this folder's contents for this project —
+# committed so CI can sign without external secrets configuration.

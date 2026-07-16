@@ -2,6 +2,13 @@ plugins {
     id 'com.android.application'
 }
 
+def keystorePropertiesFile = rootProject.file("keystore/keystore.properties")
+def keystoreProperties = new Properties()
+def hasKeystore = keystorePropertiesFile.exists()
+if (hasKeystore) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace 'com.bnglobal.app'
     compileSdk 34
@@ -14,17 +21,13 @@ android {
         versionName "1.0"
     }
 
-    // Release signing config, read from environment variables so no secrets are
-    // hardcoded in this file. Locally, set these as system env vars before running
-    // `./gradlew bundleRelease`. In CI, they come from GitHub Actions secrets.
     signingConfigs {
         release {
-            def ksPath = System.getenv("RELEASE_KEYSTORE_PATH")
-            if (ksPath != null) {
-                storeFile file(ksPath)
-                storePassword System.getenv("RELEASE_KEYSTORE_PASSWORD")
-                keyAlias System.getenv("RELEASE_KEY_ALIAS")
-                keyPassword System.getenv("RELEASE_KEY_PASSWORD")
+            if (hasKeystore) {
+                storeFile rootProject.file("keystore/bnglobal-release.jks")
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
             }
         }
     }
@@ -33,7 +36,7 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            if (System.getenv("RELEASE_KEYSTORE_PATH") != null) {
+            if (hasKeystore) {
                 signingConfig signingConfigs.release
             }
         }
