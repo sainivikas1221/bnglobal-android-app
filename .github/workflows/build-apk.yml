@@ -29,31 +29,37 @@ jobs:
       - name: Accept Android SDK licenses
         run: yes | sdkmanager --licenses || true
 
-      - name: Build debug APK
+      - name: Build debug APKs (all modules)
         run: gradle assembleDebug --no-daemon
 
-      - name: Upload APK as workflow artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: BNGlobal-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
-
-      - name: Build signed release AAB
+      - name: Build signed release AABs (all modules)
         run: gradle bundleRelease --no-daemon
 
-      - name: Upload AAB as workflow artifact
+      - name: Upload BNGlobal artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: BNGlobal-release-aab
-          path: app/build/outputs/bundle/release/app-release.aab
+          name: BNGlobal-build-outputs
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/bundle/release/*.aab
 
-      - name: Commit APK and AAB back into repo
+      - name: Upload GenieCorps artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: GenieCorps-build-outputs
+          path: |
+            geniecorps-app/build/outputs/apk/debug/*.apk
+            geniecorps-app/build/outputs/bundle/release/*.aab
+
+      - name: Commit APKs and AABs back into repo
         run: |
           mkdir -p release
-          cp app/build/outputs/apk/debug/app-debug.apk release/BNGlobal-debug.apk
-          cp app/build/outputs/bundle/release/app-release.aab release/BNGlobal-release.aab
+          cp app/build/outputs/apk/debug/*.apk release/BNGlobal-debug.apk
+          cp app/build/outputs/bundle/release/*.aab release/BNGlobal-release.aab
+          cp geniecorps-app/build/outputs/apk/debug/*.apk release/GenieCorps-debug.apk
+          cp geniecorps-app/build/outputs/bundle/release/*.aab release/GenieCorps-release.aab
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add release/
-          git diff --staged --quiet || git commit -m "Add built APK/AAB [skip ci]"
+          git diff --staged --quiet || git commit -m "Add built APKs/AABs [skip ci]"
           git push

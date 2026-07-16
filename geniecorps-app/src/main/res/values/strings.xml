@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">GenieCorps</string>
+    <string name="site_url">https://geniecorps.in/</string>
+    <string name="no_internet_title">No Internet Connection</string>
+    <string name="no_internet_message">GenieCorps needs an internet connection to load. Please check your connection and try again.</string>
+    <string name="retry">Retry</string>
+    <string name="load_error_message">Couldn\'t load the page. Please check your connection.</string>
+</resources>
